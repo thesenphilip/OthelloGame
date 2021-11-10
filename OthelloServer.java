@@ -5,30 +5,53 @@ import java.net.*;
 import java.util.*;
 
 /**
-   This program implements a multithreaded server that listens to port 8189 and echoes back 
-   all client input.
+   This program implements a multithreaded server
 */
-public class OthelloServer
+public class OthelloServer extends Thread
 {  
+   Vector<OthelloServerThread> clientList = new Vector<>();
+   int port;
+
+   public OthelloServer(String[] args){
+      int tempPort;
+      if (args.length == 0){
+         System.out.println("Using defualt port: 62000");
+         tempPort = 62000;
+      }
+      else{
+         try{
+            tempPort = Integer.parseInt(args[0]);
+            System.out.println("Using port number: " + Integer.toString(tempPort));
+         }
+         catch(NumberFormatException e){
+            System.out.println("Error: Invalid port number: " + args[0]);
+            System.out.println("Using defualt port: 62000");
+            tempPort = 62000;
+         }
+      }
+      port = tempPort;
+   }
+
    public static void main(String[] args )
    {  
-      OthelloServer othelloServer = new OthelloServer();
+      OthelloServer othelloServer = new OthelloServer(args);
+      othelloServer.start();
       
    }
 
-   OthelloServer(){
+   public void run(){
       try
       {  
          int i = 1;
-         ServerSocket s = new ServerSocket(8189);
+         ServerSocket s = new ServerSocket(port);
 
          while (true)
          {  
             Socket incoming = s.accept();
-            System.out.println("Spawing a server thread " + i);
-            Runnable r = new ThreadedEchoHandler(incoming);
-            Thread t = new Thread(r);
-            t.start();
+            System.out.println("Inbound connection #" + i);
+            OthelloServerThread client = new OthelloServerThread(incoming, this);
+            client.start();
+            clientList.add(client);
             i++;
          }
       }
@@ -38,59 +61,46 @@ public class OthelloServer
       }
    }
 
-}
-
-/**
-   This class handles the client input for one server socket connection. 
-*/
-class ThreadedEchoHandler implements Runnable
-{ 
-   /**
-      Constructs a handler.
-      @param i the incoming socket
-      @param c the counter for the handlers (used in prompts)
-   */
-   public ThreadedEchoHandler(Socket i)
-   { 
-      incoming = i; 
+   synchronized public void print(String message){
+      System.out.println(message);
    }
 
-   public void run()
-   {  
-      try
-      {  
-         try
-         {
-            InputStream inStream = incoming.getInputStream();
-            OutputStream outStream = incoming.getOutputStream();
-            
-            Scanner in = new Scanner(inStream);         
-            PrintWriter out = new PrintWriter(outStream, true /* autoFlush */);
-            
-            out.println( "Hello! Enter BYE to exit." );
-            
-            // echo client input
-            boolean done = false;
-            while (!done && in.hasNextLine())
-            {  
-               String line = in.nextLine();            
-               out.println("Echo: " + line);   
-               System.out.println("Client: "+line);
-               if (line.trim().equals("BYE"))
-                  done = true;
-            }
-         }
-         finally
-         {
-            incoming.close();
-         }
-      }
-      catch (IOException e)
-      {  
-         e.printStackTrace();
+   synchronized public void broadcast(String message){
+      for(OthelloServerThread thread: clientList){
+         thread.display(message);
       }
    }
 
-   private Socket incoming;
-}
+   synchronized public void printEveryoneElse(String message, OthelloServerThread temp){
+      for(OthelloServerThread thread: clientList){
+         if(thread != temp){
+            thread.display(message);
+         }
+      }
+   }
 
+   synchronized public String[] who(OthelloServerThread thread){
+      String[] names = new String[clientList.size() + 1];
+      
+      names[0] = "Currently on the server:";
+
+      for(int i = 0; i < clientList.size(); i++){
+         String name = clientList.get(i).getUsername();
+         names[i + 1] = name;
+      }
+
+      return names;
+   }
+
+   synchronized public void removeClient(OthelloServerThread client){
+      String tempName = "";
+      for(int i = 0; i < clientList.size(); i++){
+         if (client == clientList.get(i)){
+            tempName = clientList.get(i).getUsername();
+            clientList.get(i).disconnect();
+            clientList.remove(i);
+            break;
+         }
+      }
+   }
+}

@@ -222,7 +222,6 @@ public class OthelloNetworkModalViewController extends JDialog
     */
     public boolean pressedConnect()
     {
-
         return hasConnected;
     }
     
@@ -285,7 +284,6 @@ public class OthelloNetworkModalViewController extends JDialog
             }
             else //My "Cancel" button has an action command of "X" and gets called here.
             {
-                
                 hasConnected=false;
                 hideModal();
             }

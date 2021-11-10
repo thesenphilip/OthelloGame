@@ -9,45 +9,126 @@ import java.util.*;
  * time that the server sends.
  *
  */
-public class OthelloNetworkController
+public class OthelloNetworkController extends Thread
 {
+   OthelloViewController ovc;
+   private Socket connection;
+   private String userName;
+   InputStream inStream;
+   OutputStream outStream;
+   PrintWriter out;
+   boolean connected = false;
+   String address;
+   int port;
+   boolean loop = true;
+   Scanner input;
 
-  OthelloNetworkController(String address, int port, String name){
-
-  }
-
-
-
-   public static void main(String[] args)
-   {
-      Socket s = null;
-      int port = 8189;
-      String host = "localhost"; //"127.0.0.1"
+   OthelloNetworkController(String address, int port, String name, OthelloViewController frame){
+      ovc = frame;
+      connection = null;
+      userName = name;
+      address = address;
+      port = port;
       try
       {
- //         s = new Socket("localhost", 8189);
-            s = new Socket();
-            s.connect(new InetSocketAddress(InetAddress.getByName(host),port),10000);
-            s.setSoTimeout(10000);
+            connection = new Socket(address, port);
+            //connection.setSoTimeout(10000); // FUCK THIS SHIT
          try
          {
-            InputStream inStream = s.getInputStream();
-            Scanner in = new Scanner(inStream);
-
-            while (in.hasNextLine())
-            {
-               String line = in.nextLine();
-               System.out.println(line);
-            }
+            inStream = connection.getInputStream();
+            input = new Scanner(inStream);
+            outStream = connection.getOutputStream();
+            out = new PrintWriter(outStream, true /* autoFlush */);
          }
-         finally
-         {
-            s.close();
+         catch (EOFException ee) 
+         { 
+            System.out.println(ee); 
+            ovc.rightCenter.append("\nEnd of file exception");
+            return;
          }
+         
       }
-      catch (IOException e)
+      catch (UnknownHostException uhe) 
+      { 
+         System.out.println(uhe);
+         ovc.rightCenter.append("\nUnknown host excatpion");
+         return;
+      }
+      catch (ConnectException ce)
       {
-         e.printStackTrace();
+         ovc.rightCenter.append("\nerror:SERVER NOT RUNNING???(error caugh by OthelloNetworkController");  
+         return; 
+      }
+      catch (SocketTimeoutException ste)
+      {
+         //rare, but if the timer on the connection runs out
+         ste.printStackTrace();
+         ovc.rightCenter.append("\nSocet Timeout exception");
+         return;
+      }
+      catch (IOException io)
+      {
+         io.printStackTrace();
+         ovc.rightCenter.append("\nIO excatpion");
+         return;
+      }
+      connected = true;
+      ovc.connect.setEnabled(false);
+   }
+
+   public boolean connected(){
+      return connected;
+   }
+
+   public void toServer(String message){
+      out.println(message);
+   }
+
+   public void disconnect(){
+      loop = false;
+
+      connected = false;
+      ovc.disconnect.setEnabled(false);
+      ovc.submitBtn.setEnabled(false);
+      ovc.connect.setEnabled(true);
+      ovc.rightCenter.append("\nDisconnected from server.");
+
+      try{
+         inStream.close();
+         outStream.close();
+         connection.close();
+      }
+      catch (IOException ioe)
+      {
+         System.out.println(ioe);
+         ovc.rightCenter.append("\nIO exception");
+      }
+   }
+
+   public void run(){   
+      String line;
+      int checks = 0;
+      toServer(userName);
+      while (loop)
+      {     
+         out.print("");
+
+         try{
+            line = input.nextLine();
+         }
+         catch(NoSuchElementException e){
+            if (checks < 10){
+               checks++;
+               continue;
+            }
+            else{
+               ovc.rightCenter.append("\nServer no longer reachable");
+               disconnect();
+               break;
+            }      
+         }
+         ovc.rightCenter.append("\n" + line);
       }
    }
 }
+

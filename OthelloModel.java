@@ -42,7 +42,7 @@ public class OthelloModel
 	public static final int OUTER_TEST=2;
 
 	/** Represents a 1 X capture game scenario. Value: @{value} */
-  public static final int TEST_CAPTURE=3;
+    public static final int TEST_CAPTURE=3;
 
 	/** Represents a 2 X capture game scenario. Value: @{value} */
 	public static final int TEST_CAPTURE2=4;
@@ -53,7 +53,7 @@ public class OthelloModel
 	/** Represents a inner test game scenario. Value: @{value} */
 	public static final int INNER_TEST=6;
 
-  /** Represents an empty board square. Value: @{value} */
+    /** Represents an empty board square. Value: @{value} */
 	public static final int EMPTY=0;
 
 	/** Represents player 1 (Black) on the game board . Value: @{value} */
@@ -159,7 +159,7 @@ public class OthelloModel
 	 * @param y - Column of the board.
 	 * @return int[][] board - The game board.  
 	 */
-  public int getBoard(int x, int y){
+    public int getBoard(int x, int y){
 		return board[x][y];
 	}
 
@@ -170,7 +170,7 @@ public class OthelloModel
 	 * @param y - Column of the board.
 	 * @return boolean isValid - If there is a valid move or not.  
 	 */
-  public boolean isValid(int x, int y, int player){
+    public boolean isValid(int x, int y, int player){
 		int opponent, temp, index;
 		boolean isValid = false;
 		int[][] tempArray = new int[100][100];
@@ -325,7 +325,7 @@ public class OthelloModel
 			if (board[x-1][y-1] == opponent){
 				temp = y - 1;
 				for(int i = x - 1; i > -1; i--){
-					if (temp == 8){
+					if (temp == 8 || temp < 0){
 						break;
 					}
 					if(board[i][temp] == EMPTY){
@@ -385,7 +385,7 @@ public class OthelloModel
 			if (board[x+1][y-1] == opponent){
 				temp = y - 1;
 				for(int i = x + 1; i <8; i++){
-					if (temp == 8){
+					if (temp == 8 || temp < 0){
 						break;
 					}
 					if(board[i][temp] == EMPTY){
@@ -419,22 +419,22 @@ public class OthelloModel
 	 * @return int numFlipped - Number of pieces flipped.  
 	 */
 	public int move (int x, int y, int player){
-			int temp, tempX, tempY, numFlipped = 0;
+		int temp, tempX, tempY, numFlipped = 0;
 
-			if (isValid(x,y,player)){
-				board[x][y] = player;
-				for(int i = 0; i < flagged.size(); i++){
-					tempX = flagged.get(i);
-					i++;
-					tempY = flagged.get(i);
-					board[tempX][tempY] = player;
-					numFlipped++;
-				}
-				return numFlipped;
+		if (isValid(x,y,player)){
+			board[x][y] = player;
+			for(int i = 0; i < flagged.size(); i++){
+				tempX = flagged.get(i);
+				i++;
+				tempY = flagged.get(i);
+				board[tempX][tempY] = player;
+				numFlipped++;
 			}
-
-			return 0;
+			return numFlipped;
 		}
+
+		return 0;
+	}
 
 	/**
 	 * This method determines if the current player can move.
@@ -443,15 +443,15 @@ public class OthelloModel
 	 * @return boolean - True, if valid move. False, if not.  
 	 */
 	public boolean canMove(int player){
-			for(int i = 0; i < 8; i++){
-				for(int j = 0; j < 8; j++){
-					if (isValid(i,j,player)){
-						return true;
-					}
+		for(int i = 0; i < 8; i++){
+			for(int j = 0; j < 8; j++){
+				if (isValid(i,j,player)){
+					return true;
 				}
 			}
-			return false;
 		}
+		return false;
+	}
 
 	/**
 	 * This method counts the amount of chips for each player.
@@ -460,31 +460,16 @@ public class OthelloModel
 	 * @return int count - The amount of chips.  
 	 */
 	public int getChips(int player){
-			int count = 0;
+		int count = 0;
 
-			for(int i = 0; i < 8; i++){
-				for(int j = 0; j < 8; j++){
-					if (board[i][j] == player){
-						count++;
-					}
-				}
-			}
-
-			return count;
-		}
-	/**
-	 * This method prints the board.
-	 *
-	 */
-	public void printModel(){
-		for (int x = 0; x < 8; x++){
-			for (int y = 0; y < 8; y++){
-				System.out.print(board[x][y]);
-				if (y == 7){
-					System.out.println();
+		for(int i = 0; i < 8; i++){
+			for(int j = 0; j < 8; j++){
+				if (board[i][j] == player){
+					count++;
 				}
 			}
 		}
+
+		return count;
 	}
-
 }

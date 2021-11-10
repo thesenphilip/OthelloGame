@@ -16,6 +16,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
 import java.awt.EventQueue;
+import java.util.*;
 
 /**
  * This class is responsible constructing the Othello game GUI.
@@ -99,6 +100,14 @@ public class OthelloViewController extends JFrame{
 
      /**Network connect model */
     OthelloNetworkModalViewController networkModel;
+
+    OthelloNetworkController client;
+
+    JMenuItem disconnect;
+
+    JButton submitBtn;
+
+    JMenuItem connect;
 
     /**
     * The default constructor that creates a main JPanel 
@@ -380,7 +389,7 @@ public class OthelloViewController extends JFrame{
         userTextField.setEditable(true); 
 
         //Submit button
-        JButton submitBtn = createButton("Submit", "Submit", red, black, control);
+        submitBtn = createButton("Submit", "Submit", red, black, control);
         submitBtn.setFont(new Font("", Font.PLAIN, 10));
         submitBtn.setMargin(new Insets(0, 0, 0, 0));
         submitBtn.setEnabled(false);
@@ -407,8 +416,8 @@ public class OthelloViewController extends JFrame{
         JMenu helpMenu =  new JMenu("Help");
 
         // Network menu
-        JMenuItem connect = createMenuItem("New Connection", "connect", control);
-        JMenuItem disconnect = createMenuItem("Disconnect", "disconnect", control);
+        connect = createMenuItem("New Connection", "connect", control);
+        disconnect = createMenuItem("Disconnect", "disconnect", control);
         netMenu.add(connect);
         netMenu.add(disconnect);
         disconnect.setEnabled(false);
@@ -682,12 +691,24 @@ public class OthelloViewController extends JFrame{
     }
 
     public void connect(){
+       
         String address = networkModel.getAddress();
         int port = networkModel.getPort();
         String name = networkModel.getName();
 
-        
-
+        rightCenter.append("\nNegotiating connection with "+ address + " on port "+ port);
+       
+        client = new OthelloNetworkController(address, port, name, this);
+        boolean ret = client.connected();
+        if (ret){
+            rightCenter.append("\nConnection Successful");
+            client.start();
+            disconnect.setEnabled(true);
+            submitBtn.setEnabled(true);
+        }
+        else{
+            rightCenter.append("\nConnection not successfull");
+        }
     }
 
     /**
@@ -799,23 +820,12 @@ public class OthelloViewController extends JFrame{
                     createNetworkConnection();
 
                     // If cancel was pressed.
-                    if (!networkModel.pressedConnect()){
-                        rightCenter.append("\nCancel Pressed.");
+                    if (networkModel.pressedConnect()){
+                        connect();
                     }
-                    else{
-                        rightCenter.append("\nConnect Pressed.");
-                    }
-
-                    int port = networkModel.getPort();
-                    String address = networkModel.getAddress();
-
-                    rightCenter.append("\nConnecting to " + address);
-                    rightCenter.append("\nOn port " + port);
-
-
                     break;
                 case("disconnect"):
-                    rightCenter.append("\nDisconnecting from network connection");
+                    client.disconnect();
                     break;
             }
 
@@ -825,6 +835,15 @@ public class OthelloViewController extends JFrame{
             //updates the board if newGame is selected.
             if ("newGame".equals(arg)){
                 newGame();
+            }
+
+            if ("Submit".equals(arg)){
+                String text = userTextField.getText();
+                if (text != null){
+                    client.toServer(text);
+                }
+
+                userTextField.setText("");
             }
 
         }
